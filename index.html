@@ -3,23 +3,26 @@
   ========================================================================
   Project: แผนที่วิเคราะห์พิกัดพระอาทิตย์ตั้งฉาก, เข็มทิศ & ทิศอาทิตย์ขึ้น-ตก
   Author/Developer: Sumet Prapasathit
-  Version: 5.4 (Fixed Fixed-Direction Terminator Sunrise/Sunset Labels)
+  Version: 6.3 (True Mobile-Optimized Responsive Layout)
   ========================================================================
 -->
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>แผนที่ Subsolar Point & เข็มทิศมือถือ - โดย Sumet Prapasathit</title>
     
     <!-- ดึงไฟล์ Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
             background-color: #f4f6f9;
             display: flex;
             flex-direction: column;
@@ -28,47 +31,16 @@
         .main-container {
             width: 100%;
             max-width: 1200px;
-            transition: all 0.4s ease;
-        }
-        
-        .mobile-mode-wrapper {
-            max-width: 410px !important;
-            margin: 0 auto;
-            border: 12px solid #2d2d2d;
-            border-radius: 48px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            overflow: hidden;
-            background: #fff;
-            position: relative;
-        }
-        .mobile-notch {
-            display: none;
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 110px;
-            height: 28px;
-            background-color: #000;
-            border-radius: 20px;
-            z-index: 2000;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-        }
-        .mobile-mode-wrapper .mobile-notch {
-            display: block;
-        }
-        .mobile-mode-wrapper #map {
-            height: 620px !important;
         }
 
+        /* แผงควบคุม (Control Panel) */
         .control-panel {
             background: #ffffff;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 14px;
+            margin-bottom: 12px;
+            border-radius: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
             width: 100%;
-            box-sizing: border-box;
         }
         .panel-header {
             display: flex;
@@ -77,24 +49,47 @@
             flex-wrap: wrap;
             gap: 10px;
         }
+        .panel-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #1a1a1a;
+        }
         .form-group {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
             flex-wrap: wrap;
-            margin-top: 10px;
+            margin-top: 12px;
+        }
+        .date-stepper {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            flex-grow: 1;
         }
         input[type="date"], button {
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #dcdcdc;
             font-size: 14px;
+            outline: none;
+        }
+        input[type="date"] {
+            flex-grow: 1;
+            min-width: 130px;
         }
         button {
             background-color: #007bff;
             color: white;
             border: none;
             cursor: pointer;
+            font-weight: 600;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        button:active {
+            opacity: 0.85;
+            transform: scale(0.98);
         }
         .btn-step { background-color: #6c757d; }
         .btn-today { background-color: #28a745; }
@@ -107,37 +102,58 @@
             align-items: center;
             gap: 5px;
         }
-        .btn-mobile {
-            background-color: #343a40;
-            font-weight: bold;
-        }
-        .btn-mobile.active {
-            background-color: #e83e8c;
-        }
         
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+            background: #f8f9fa;
+            padding: 10px 12px;
+            border-radius: 8px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13.5px;
+            color: #333;
+            cursor: pointer;
+        }
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #007bff;
+            cursor: pointer;
+        }
+
         #map-container {
             position: relative;
             width: 100%;
         }
         #map {
-            height: 550px;
+            height: calc(100vh - 280px);
+            min-height: 450px;
+            max-height: 750px;
             width: 100%;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 14px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+            z-index: 1;
         }
 
+        /* หน้าปัดเข็มทิศดิจิทัลมุมขวาบน */
         .compass-box {
             position: absolute;
-            top: 15px;
-            right: 15px;
+            top: 12px;
+            right: 12px;
             z-index: 1000;
             background: rgba(255, 255, 255, 0.94);
-            padding: 8px 12px 10px 12px;
-            border-radius: 14px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+            padding: 6px 10px 8px 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.18);
             text-align: center;
-            min-width: 100px;
-            transition: opacity 0.3s, transform 0.3s;
+            min-width: 90px;
+            backdrop-filter: blur(4px);
         }
         .compass-box.disabled {
             opacity: 0.45;
@@ -146,30 +162,27 @@
 
         .compass-outer-wrapper {
             position: relative;
-            width: 76px;
-            height: 76px;
-            margin: 2px auto 4px auto;
+            width: 66px;
+            height: 66px;
+            margin: 2px auto 2px auto;
         }
-
         .cardinal-n {
             position: absolute;
             top: -3px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
             color: #ff3b30;
-            line-height: 1;
         }
-
         .compass-disc {
-            width: 50px;
-            height: 50px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             border: 2px solid #007bff;
             position: absolute;
-            top: 16px;
-            left: 13px;
+            top: 15px;
+            left: 11px;
             transition: transform 0.15s ease-out;
             background: radial-gradient(circle, #fff 60%, #e9ecef 100%);
             box-sizing: border-box;
@@ -179,9 +192,9 @@
             height: 0;
             border-left: 5px solid transparent;
             border-right: 5px solid transparent;
-            border-bottom: 20px solid #ff4d4d;
+            border-bottom: 18px solid #ff4d4d;
             position: absolute;
-            top: 3px;
+            top: 2px;
             left: 50%;
             transform: translateX(-50%);
         }
@@ -199,48 +212,42 @@
             margin-top: -4px;
             margin-left: -4px;
         }
-        .compass-marker-sunrise {
-            background-color: #ff9800;
-        }
-        .compass-marker-sunset {
-            background-color: #e91e63;
-        }
+        .compass-marker-sunrise { background-color: #ff9800; }
+        .compass-marker-sunset { background-color: #e91e63; }
 
         .compass-degree {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             color: #333;
         }
         .compass-cardinal {
-            font-size: 12px;
+            font-size: 11px;
             color: #666;
         }
 
         .author-box {
             position: absolute;
-            bottom: 20px;
-            left: 15px;
+            bottom: 15px;
+            left: 12px;
             z-index: 1000;
             background: rgba(0, 0, 0, 0.75);
             color: #ffffff;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 5px 12px;
+            border-radius: 16px;
+            font-size: 11px;
             font-weight: bold;
             letter-spacing: 0.5px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(4px);
         }
 
-        /* ป้ายกำกับตัวอักษรสีดำอ่านง่าย #000000 */
+        /* ป้ายกำกับบนแผนที่ (ตัวอักษรสีดำอ่านง่าย #000000) */
         .yellow-line-label {
             background-color: #ffd700;
             color: #000000;
             font-weight: bold;
-            font-size: 13px;
-            padding: 3px 10px;
-            border-radius: 12px;
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 10px;
             border: 1px solid #d4af37;
             white-space: nowrap;
         }
@@ -248,8 +255,8 @@
             background-color: #ff4d4d;
             color: #000000;
             font-weight: bold;
-            font-size: 12px;
-            padding: 4px 8px;
+            font-size: 11px;
+            padding: 3px 6px;
             border-radius: 4px;
             white-space: nowrap;
         }
@@ -274,66 +281,63 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        .checkbox-group {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-top: 10px;
+        /* Responsive Layout สำหรับจอมือถือโดยเฉพาะ (Mobile Media Query) */
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+            .control-panel { padding: 12px; }
+            .panel-header h2 { font-size: 16px; }
+            .form-group { flex-direction: column; align-items: stretch; }
+            .date-stepper { width: 100%; }
+            .btn-today, .btn-compass { width: 100%; padding: 12px; }
+            #map { height: calc(100vh - 340px); min-height: 380px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="main-container" id="mainContainer">
+    <div class="main-container">
         <div class="control-panel">
             <div class="panel-header">
                 <h2 id="txtTitle">วิเคราะห์พิกัดดวงอาทิตย์ & เข็มทิศมือถือ</h2>
-                <div style="display:flex; gap:8px;">
-                    <button class="btn-mobile" id="btnMobileView" onclick="toggleMobileView()">📱 โหมดมือถือ</button>
-                    <button class="btn-lang" onclick="toggleLanguage()">
-                        🌐 <span id="txtLangBtn">English</span>
-                    </button>
-                </div>
+                <button class="btn-lang" onclick="toggleLanguage()">
+                    🌐 <span id="txtLangBtn">English</span>
+                </button>
             </div>
             
             <div class="form-group">
-                <label id="lblSelectDate" for="dateInput" style="font-weight:bold;">เลือกวันที่:</label>
-                <button class="btn-step" id="btnPrevDay" onclick="changeDate(-1)">◀ 1 วัน</button>
-                <input type="date" id="dateInput" onchange="updateMapFromInput()">
-                <button class="btn-step" id="btnNextDay" onclick="changeDate(1)">1 วัน ▶</button>
-                
+                <div class="date-stepper">
+                    <button class="btn-step" id="btnPrevDay" onclick="changeDate(-1)">◀ 1 วัน</button>
+                    <input type="date" id="dateInput" onchange="updateMapFromInput()">
+                    <button class="btn-step" id="btnNextDay" onclick="changeDate(1)">1 วัน ▶</button>
+                </div>
                 <button class="btn-today" id="btnToday" onclick="useCurrentLocationAndDate()">พิกัด/วันที่ปัจจุบัน</button>
                 <button class="btn-compass" id="btnCompass" onclick="toggleCompass()">🧭 เปิดเข็มทิศมือถือ</button>
             </div>
             
             <div class="checkbox-group">
-                <div>
+                <label class="checkbox-item" for="showTerminator">
                     <input type="checkbox" id="showTerminator" checked onchange="updateMapFromInput()">
-                    <label for="showTerminator" id="lblShowTerminator">แสดงเส้นแบ่งกลางวัน-กลางคืน (Terminator)</label>
-                </div>
-                <div>
+                    <span id="lblShowTerminator">แสดงเส้นแบ่งกลางวัน-กลางคืน (Terminator)</span>
+                </label>
+                <label class="checkbox-item" for="showLocalAzimuth">
                     <input type="checkbox" id="showLocalAzimuth" onchange="updateMapFromInput()">
-                    <label for="showLocalAzimuth" id="lblShowLocalAzimuth">แสดงทิศอาทิตย์ขึ้น-ตก ณ พิกัด (Sunrise/Sunset Azimuth)</label>
-                </div>
-                <div>
+                    <span id="lblShowLocalAzimuth">แสดงทิศอาทิตย์ขึ้น-ตก ณ พิกัด (Sunrise/Sunset Azimuth)</span>
+                </label>
+                <label class="checkbox-item" for="enableCompassCheck">
                     <input type="checkbox" id="enableCompassCheck" onchange="toggleCompassFromCheckbox(this.checked)">
-                    <label for="enableCompassCheck" id="lblEnableCompass">เปิดใช้งานเข็มทิศ (Compass Sensor)</label>
-                </div>
+                    <span id="lblEnableCompass">เปิดใช้งานเข็มทิศ (Compass Sensor)</span>
+                </label>
             </div>
             
-            <div id="statusText" style="margin-top:8px; font-size:14px; color:#555;">กำลังคำนวณ...</div>
+            <div id="statusText" style="margin-top:10px; font-size:13px; color:#555; line-height:1.4;">กำลังคำนวณ...</div>
         </div>
 
         <div id="map-container">
-            <div class="mobile-notch"></div>
-
             <div class="compass-box disabled" id="compassBox">
                 <div class="compass-cardinal" id="compassHeadingText">ทิศ: OFF</div>
                 
                 <div class="compass-outer-wrapper">
                     <span class="cardinal-n">N</span>
-
                     <div class="compass-disc" id="compassDisc">
                         <div class="compass-arrow"></div>
                         <div class="compass-sun-marker compass-marker-sunrise" id="compassMarkerSunrise" title="Sunrise Direction"></div>
@@ -362,14 +366,11 @@
          */
 
         let currentLang = 'th';
-        let isMobileView = false;
 
         const i18n = {
             th: {
                 title: "วิเคราะห์พิกัดดวงอาทิตย์ & เข็มทิศมือถือ",
                 langBtn: "English EN",
-                btnMobileOn: "💻 โหมดเต็มจอ",
-                btnMobileOff: "📱 โหมดมือถือ",
                 selectDate: "เลือกวันที่:",
                 prevDay: "◀ 1 วัน",
                 nextDay: "1 วัน ▶",
@@ -397,8 +398,6 @@
             en: {
                 title: "Solar Subsolar & Mobile Compass Analysis",
                 langBtn: "ภาษาไทย 🇹🇭",
-                btnMobileOn: "💻 Full Screen Mode",
-                btnMobileOff: "📱 Mobile Mode",
                 selectDate: "Date:",
                 prevDay: "◀ 1 Day",
                 nextDay: "1 Day ▶",
@@ -451,24 +450,6 @@
         let smoothedHeading = 0;
         const filterFactor = 0.2;
 
-        function toggleMobileView() {
-            isMobileView = !isMobileView;
-            const container = document.getElementById('mainContainer');
-            const btn = document.getElementById('btnMobileView');
-            const t = i18n[currentLang];
-            
-            if (isMobileView) {
-                container.classList.add('mobile-mode-wrapper');
-                btn.classList.add('active');
-                btn.innerText = t.btnMobileOn;
-            } else {
-                container.classList.remove('mobile-mode-wrapper');
-                btn.classList.remove('active');
-                btn.innerText = t.btnMobileOff;
-            }
-            setTimeout(() => { map.invalidateSize(); }, 400);
-        }
-
         function toggleLanguage() {
             currentLang = currentLang === 'th' ? 'en' : 'th';
             updateUITexts();
@@ -479,16 +460,12 @@
             const t = i18n[currentLang];
             document.getElementById('txtTitle').innerText = t.title;
             document.getElementById('txtLangBtn').innerText = t.langBtn;
-            document.getElementById('lblSelectDate').innerText = t.selectDate;
             document.getElementById('btnPrevDay').innerText = t.prevDay;
             document.getElementById('btnNextDay').innerText = t.nextDay;
             document.getElementById('btnToday').innerText = t.today;
             document.getElementById('lblShowTerminator').innerText = t.showTerminator;
             document.getElementById('lblShowLocalAzimuth').innerText = t.showLocalAzimuth;
             document.getElementById('lblEnableCompass').innerText = t.enableCompass;
-            
-            const btnMobile = document.getElementById('btnMobileView');
-            btnMobile.innerText = isMobileView ? t.btnMobileOn : t.btnMobileOff;
 
             const btnCompass = document.getElementById('btnCompass');
             if (isCompassActive) {
@@ -655,7 +632,7 @@
         }
 
         function updateCompassSunMarkers(sunriseAz, sunsetAz) {
-            const radius = 24;
+            const radius = 22;
             
             const srRad = (sunriseAz - 90) * (Math.PI / 180);
             const srX = radius * Math.cos(srRad);
@@ -716,14 +693,13 @@
                 const termStartLat = subsolarLat - (deltaLng * Math.tan(angleRad));
                 const termEndLat = subsolarLat + (deltaLng * Math.tan(angleRad));
 
-                const westPoint = [termStartLat, centerLng - deltaLng]; // จุดปลายฝั่งซ้าย (ทิศตะวันตก)
-                const eastPoint = [termEndLat, centerLng + deltaLng];    // จุดปลายฝั่งขวา (ทิศตะวันออก)
+                const westPoint = [termStartLat, centerLng - deltaLng];
+                const eastPoint = [termEndLat, centerLng + deltaLng];
 
                 terminatorLine = L.polyline([westPoint, eastPoint], {
                     color: '#ff4d4d', weight: 3, opacity: 0.8, dashArray: '4, 8'
                 }).addTo(map);
 
-                // ฝั่งซ้าย (ทิศตะวันตก) เป็น Sunset เสมอ | ฝั่งขวา (ทิศตะวันออก) เป็น Sunrise เสมอ
                 startLabelMarker = L.marker(westPoint, {
                     icon: L.divIcon({ className: 'sun-event-label', html: `🌇 ${t.sunset}`, iconAnchor: [40, 10] })
                 }).addTo(map);
@@ -777,7 +753,7 @@
             document.getElementById('statusText').innerHTML = 
                 `${t.statusPrefix}<b>${formattedDate}</b> | ` +
                 `${t.subsolarText}<b>${Math.abs(subsolarLat).toFixed(2)}° ${latDir}</b> <i>(${thStatus})</i><br>` +
-                `<span style="color:#d9534f; font-size:13px;">* ${t.localSunrise}<b>${sunriseTimeStr} น.</b> (${sunriseAzimuth.toFixed(1)}° ${getCardinalDirection(sunriseAzimuth)}) | ${t.localSunset}<b>${sunsetTimeStr} น.</b> (${sunsetAzimuth.toFixed(1)}° ${getCardinalDirection(sunsetAzimuth)})</span>`;
+                `<span style="color:#d9534f; font-size:12.5px;">* ${t.localSunrise}<b>${sunriseTimeStr} น.</b> (${sunriseAzimuth.toFixed(1)}° ${getCardinalDirection(sunriseAzimuth)}) | ${t.localSunset}<b>${sunsetTimeStr} น.</b> (${sunsetAzimuth.toFixed(1)}° ${getCardinalDirection(sunsetAzimuth)})</span>`;
         }
 
         function formatDateToInputString(date) {
