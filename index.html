@@ -3,7 +3,7 @@
   ========================================================================
   Project: แผนที่วิเคราะห์พิกัดพระอาทิตย์ตั้งฉาก, เข็มทิศ & ทิศอาทิตย์ขึ้น-ตก
   Author/Developer: Sumet Prapasathit
-  Version: 3.0 (Add Local Sunrise/Sunset Azimuth Directions)
+  Version: 5.4 (Fixed Fixed-Direction Terminator Sunrise/Sunset Labels)
   ========================================================================
 -->
 <html lang="th">
@@ -15,18 +15,60 @@
     <!-- ดึงไฟล์ Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
+    
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 15px;
             background-color: #f4f6f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+        .main-container {
+            width: 100%;
+            max-width: 1200px;
+            transition: all 0.4s ease;
+        }
+        
+        .mobile-mode-wrapper {
+            max-width: 410px !important;
+            margin: 0 auto;
+            border: 12px solid #2d2d2d;
+            border-radius: 48px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            background: #fff;
+            position: relative;
+        }
+        .mobile-notch {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 110px;
+            height: 28px;
+            background-color: #000;
+            border-radius: 20px;
+            z-index: 2000;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        .mobile-mode-wrapper .mobile-notch {
+            display: block;
+        }
+        .mobile-mode-wrapper #map {
+            height: 620px !important;
+        }
+
         .control-panel {
             background: #ffffff;
             padding: 15px;
             margin-bottom: 15px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            width: 100%;
+            box-sizing: border-box;
         }
         .panel-header {
             display: flex;
@@ -65,7 +107,13 @@
             align-items: center;
             gap: 5px;
         }
-        .btn-lang:hover { background-color: #593196; }
+        .btn-mobile {
+            background-color: #343a40;
+            font-weight: bold;
+        }
+        .btn-mobile.active {
+            background-color: #e83e8c;
+        }
         
         #map-container {
             position: relative;
@@ -78,47 +126,88 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        /* Styling หน้าปัดเข็มทิศดิจิทัลมุมขวาบน */
         .compass-box {
             position: absolute;
             top: 15px;
             right: 15px;
             z-index: 1000;
-            background: rgba(255, 255, 255, 0.92);
-            padding: 10px 14px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.94);
+            padding: 8px 12px 10px 12px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.22);
             text-align: center;
-            min-width: 95px;
+            min-width: 100px;
             transition: opacity 0.3s, transform 0.3s;
         }
         .compass-box.disabled {
-            opacity: 0.4;
+            opacity: 0.45;
             filter: grayscale(100%);
         }
+
+        .compass-outer-wrapper {
+            position: relative;
+            width: 76px;
+            height: 76px;
+            margin: 2px auto 4px auto;
+        }
+
+        .cardinal-n {
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: 800;
+            color: #ff3b30;
+            line-height: 1;
+        }
+
         .compass-disc {
             width: 50px;
             height: 50px;
-            margin: 5px auto;
             border-radius: 50%;
-            border: 3px solid #007bff;
-            position: relative;
+            border: 2px solid #007bff;
+            position: absolute;
+            top: 16px;
+            left: 13px;
             transition: transform 0.15s ease-out;
             background: radial-gradient(circle, #fff 60%, #e9ecef 100%);
+            box-sizing: border-box;
         }
         .compass-arrow {
             width: 0;
             height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 22px solid #ff4d4d;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 20px solid #ff4d4d;
             position: absolute;
-            top: 4px;
+            top: 3px;
             left: 50%;
             transform: translateX(-50%);
         }
+
+        .compass-sun-marker {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border: 1px solid #ffffff;
+            box-shadow: 0 0 3px rgba(0,0,0,0.5);
+            z-index: 5;
+            margin-top: -4px;
+            margin-left: -4px;
+        }
+        .compass-marker-sunrise {
+            background-color: #ff9800;
+        }
+        .compass-marker-sunset {
+            background-color: #e91e63;
+        }
+
         .compass-degree {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             color: #333;
         }
@@ -127,7 +216,6 @@
             color: #666;
         }
 
-        /* Styling แสดงชื่อผู้สร้างมุมซ้ายล่างของแผนที่ */
         .author-box {
             position: absolute;
             bottom: 20px;
@@ -145,10 +233,10 @@
             backdrop-filter: blur(4px);
         }
 
-        /* ป้ายกำกับบนแผนที่ */
+        /* ป้ายกำกับตัวอักษรสีดำอ่านง่าย #000000 */
         .yellow-line-label {
             background-color: #ffd700;
-            color: #222;
+            color: #000000;
             font-weight: bold;
             font-size: 13px;
             padding: 3px 10px;
@@ -158,7 +246,7 @@
         }
         .sun-event-label {
             background-color: #ff4d4d;
-            color: white;
+            color: #000000;
             font-weight: bold;
             font-size: 12px;
             padding: 4px 8px;
@@ -167,7 +255,7 @@
         }
         .azimuth-label-sunrise {
             background-color: #ff9800;
-            color: white;
+            color: #000000;
             font-weight: bold;
             font-size: 11px;
             padding: 2px 6px;
@@ -177,7 +265,7 @@
         }
         .azimuth-label-sunset {
             background-color: #e91e63;
-            color: white;
+            color: #000000;
             font-weight: bold;
             font-size: 11px;
             padding: 2px 6px;
@@ -197,58 +285,71 @@
 </head>
 <body>
 
-    <div class="control-panel">
-        <div class="panel-header">
-            <h2 id="txtTitle">วิเคราะห์พิกัดดวงอาทิตย์ & เข็มทิศมือถือ</h2>
-            <button class="btn-lang" onclick="toggleLanguage()">
-                🌐 <span id="txtLangBtn">English</span>
-            </button>
-        </div>
-        
-        <div class="form-group">
-            <label id="lblSelectDate" for="dateInput" style="font-weight:bold;">เลือกวันที่:</label>
-            <button class="btn-step" id="btnPrevDay" onclick="changeDate(-1)">◀ 1 วัน</button>
-            <input type="date" id="dateInput" onchange="updateMapFromInput()">
-            <button class="btn-step" id="btnNextDay" onclick="changeDate(1)">1 วัน ▶</button>
+    <div class="main-container" id="mainContainer">
+        <div class="control-panel">
+            <div class="panel-header">
+                <h2 id="txtTitle">วิเคราะห์พิกัดดวงอาทิตย์ & เข็มทิศมือถือ</h2>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-mobile" id="btnMobileView" onclick="toggleMobileView()">📱 โหมดมือถือ</button>
+                    <button class="btn-lang" onclick="toggleLanguage()">
+                        🌐 <span id="txtLangBtn">English</span>
+                    </button>
+                </div>
+            </div>
             
-            <button class="btn-today" id="btnToday" onclick="useCurrentLocationAndDate()">พิกัด/วันที่ปัจจุบัน</button>
-            <button class="btn-compass" id="btnCompass" onclick="toggleCompass()">🧭 เปิดเข็มทิศมือถือ</button>
-        </div>
-        
-        <div class="checkbox-group">
-            <div>
-                <input type="checkbox" id="showTerminator" checked onchange="updateMapFromInput()">
-                <label for="showTerminator" id="lblShowTerminator">แสดงเส้นแบ่งกลางวัน-กลางคืน (Terminator)</label>
+            <div class="form-group">
+                <label id="lblSelectDate" for="dateInput" style="font-weight:bold;">เลือกวันที่:</label>
+                <button class="btn-step" id="btnPrevDay" onclick="changeDate(-1)">◀ 1 วัน</button>
+                <input type="date" id="dateInput" onchange="updateMapFromInput()">
+                <button class="btn-step" id="btnNextDay" onclick="changeDate(1)">1 วัน ▶</button>
+                
+                <button class="btn-today" id="btnToday" onclick="useCurrentLocationAndDate()">พิกัด/วันที่ปัจจุบัน</button>
+                <button class="btn-compass" id="btnCompass" onclick="toggleCompass()">🧭 เปิดเข็มทิศมือถือ</button>
             </div>
-            <div>
-                <input type="checkbox" id="showLocalAzimuth" checked onchange="updateMapFromInput()">
-                <label for="showLocalAzimuth" id="lblShowLocalAzimuth">แสดงทิศอาทิตย์ขึ้น-ตก ณ พิกัด (Sunrise/Sunset Azimuth)</label>
+            
+            <div class="checkbox-group">
+                <div>
+                    <input type="checkbox" id="showTerminator" checked onchange="updateMapFromInput()">
+                    <label for="showTerminator" id="lblShowTerminator">แสดงเส้นแบ่งกลางวัน-กลางคืน (Terminator)</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="showLocalAzimuth" onchange="updateMapFromInput()">
+                    <label for="showLocalAzimuth" id="lblShowLocalAzimuth">แสดงทิศอาทิตย์ขึ้น-ตก ณ พิกัด (Sunrise/Sunset Azimuth)</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="enableCompassCheck" onchange="toggleCompassFromCheckbox(this.checked)">
+                    <label for="enableCompassCheck" id="lblEnableCompass">เปิดใช้งานเข็มทิศ (Compass Sensor)</label>
+                </div>
             </div>
-            <div>
-                <input type="checkbox" id="enableCompassCheck" onchange="toggleCompassFromCheckbox(this.checked)">
-                <label for="enableCompassCheck" id="lblEnableCompass">เปิดใช้งานเข็มทิศ (Compass Sensor)</label>
-            </div>
-        </div>
-        
-        <div id="statusText" style="margin-top:8px; font-size:14px; color:#555;">กำลังคำนวณ...</div>
-    </div>
-
-    <div id="map-container">
-        <!-- หน้าปัดเข็มทิศดิจิทัลมุมขวาบน -->
-        <div class="compass-box disabled" id="compassBox">
-            <div class="compass-cardinal" id="compassHeadingText">ทิศ: OFF</div>
-            <div class="compass-disc" id="compassDisc">
-                <div class="compass-arrow"></div>
-            </div>
-            <div class="compass-degree" id="compassDegreeText">0°</div>
-        </div>
-        
-        <!-- ป้ายชื่อผู้สร้างมุมซ้ายล่าง -->
-        <div class="author-box">
-            Created by: Sumet Prapasathit
+            
+            <div id="statusText" style="margin-top:8px; font-size:14px; color:#555;">กำลังคำนวณ...</div>
         </div>
 
-        <div id="map"></div>
+        <div id="map-container">
+            <div class="mobile-notch"></div>
+
+            <div class="compass-box disabled" id="compassBox">
+                <div class="compass-cardinal" id="compassHeadingText">ทิศ: OFF</div>
+                
+                <div class="compass-outer-wrapper">
+                    <span class="cardinal-n">N</span>
+
+                    <div class="compass-disc" id="compassDisc">
+                        <div class="compass-arrow"></div>
+                        <div class="compass-sun-marker compass-marker-sunrise" id="compassMarkerSunrise" title="Sunrise Direction"></div>
+                        <div class="compass-sun-marker compass-marker-sunset" id="compassMarkerSunset" title="Sunset Direction"></div>
+                    </div>
+                </div>
+
+                <div class="compass-degree" id="compassDegreeText">0°</div>
+            </div>
+            
+            <div class="author-box">
+                Created by: Sumet Prapasathit
+            </div>
+
+            <div id="map"></div>
+        </div>
     </div>
 
     <!-- ดึงไฟล์ Leaflet JS -->
@@ -261,11 +362,14 @@
          */
 
         let currentLang = 'th';
+        let isMobileView = false;
 
         const i18n = {
             th: {
                 title: "วิเคราะห์พิกัดดวงอาทิตย์ & เข็มทิศมือถือ",
-                langBtn: "English 🇬🇧",
+                langBtn: "English EN",
+                btnMobileOn: "💻 โหมดเต็มจอ",
+                btnMobileOff: "📱 โหมดมือถือ",
                 selectDate: "เลือกวันที่:",
                 prevDay: "◀ 1 วัน",
                 nextDay: "1 วัน ▶",
@@ -283,8 +387,8 @@
                 headingPrefix: "ทิศ: ",
                 sunrise: "Sunrise (อาทิตย์ขึ้น)",
                 sunset: "Sunset (อาทิตย์ตก)",
-                localSunrise: "🌅 ทิศอาทิตย์ขึ้น: ",
-                localSunset: "🌇 ทิศอาทิตย์ตก: ",
+                localSunrise: "🌅 อาทิตย์ขึ้น (ตะวันออก): ",
+                localSunset: "🌇 อาทิตย์ตก (ตะวันตก): ",
                 userMarker: "<b>พิกัดปัจจุบัน:</b> ",
                 compassDenied: "ปฏิเสธการเข้าถึงเซนเซอร์เข็มทิศ",
                 compassNotSupported: "อุปกรณ์นี้ไม่รองรับเซนเซอร์เข็มทิศ",
@@ -293,6 +397,8 @@
             en: {
                 title: "Solar Subsolar & Mobile Compass Analysis",
                 langBtn: "ภาษาไทย 🇹🇭",
+                btnMobileOn: "💻 Full Screen Mode",
+                btnMobileOff: "📱 Mobile Mode",
                 selectDate: "Date:",
                 prevDay: "◀ 1 Day",
                 nextDay: "1 Day ▶",
@@ -310,8 +416,8 @@
                 headingPrefix: "Dir: ",
                 sunrise: "Sunrise",
                 sunset: "Sunset",
-                localSunrise: "🌅 Sunrise: ",
-                localSunset: "🌇 Sunset: ",
+                localSunrise: "🌅 Sunrise (East): ",
+                localSunset: "🌇 Sunset (West): ",
                 userMarker: "<b>Current Position:</b> ",
                 compassDenied: "Compass sensor access denied",
                 compassNotSupported: "Compass sensor not supported on this device",
@@ -336,7 +442,6 @@
         let startLabelMarker = null;
         let endLabelMarker = null;
         
-        // เส้นบอกทิศทางขึ้น-ตก Local Azimuth
         let sunrisePolyline = null;
         let sunsetPolyline = null;
         let sunriseAzimuthMarker = null;
@@ -345,6 +450,24 @@
         let isCompassActive = false;
         let smoothedHeading = 0;
         const filterFactor = 0.2;
+
+        function toggleMobileView() {
+            isMobileView = !isMobileView;
+            const container = document.getElementById('mainContainer');
+            const btn = document.getElementById('btnMobileView');
+            const t = i18n[currentLang];
+            
+            if (isMobileView) {
+                container.classList.add('mobile-mode-wrapper');
+                btn.classList.add('active');
+                btn.innerText = t.btnMobileOn;
+            } else {
+                container.classList.remove('mobile-mode-wrapper');
+                btn.classList.remove('active');
+                btn.innerText = t.btnMobileOff;
+            }
+            setTimeout(() => { map.invalidateSize(); }, 400);
+        }
 
         function toggleLanguage() {
             currentLang = currentLang === 'th' ? 'en' : 'th';
@@ -364,6 +487,9 @@
             document.getElementById('lblShowLocalAzimuth').innerText = t.showLocalAzimuth;
             document.getElementById('lblEnableCompass').innerText = t.enableCompass;
             
+            const btnMobile = document.getElementById('btnMobileView');
+            btnMobile.innerText = isMobileView ? t.btnMobileOn : t.btnMobileOff;
+
             const btnCompass = document.getElementById('btnCompass');
             if (isCompassActive) {
                 btnCompass.innerText = t.compassBtnOff;
@@ -465,7 +591,7 @@
         }
 
         // ==========================================
-        // สูตรดาราศาสตร์คำนวณตำแหน่งและทิศทางดวงอาทิตย์
+        // สูตรดาราศาสตร์คำนวณทิศ & เวลาอาทิตย์ขึ้น-ตก
         // ==========================================
         function getSolarDeclination(date) {
             const startOfYear = new Date(date.getFullYear(), 0, 0);
@@ -475,28 +601,47 @@
             return -23.44 * Math.cos((2 * Math.PI / 365) * (dayOfYear + 10));
         }
 
-        // คำนวณมุมทิศ Azimuth ของอาทิตย์ขึ้นและตกสำหรับพิกัดและวันที่กำหนด
-        function calculateSunriseSunsetAzimuth(lat, declination) {
+        function calculateSolarDetails(lat, lng, date, declination) {
             const latRad = lat * (Math.PI / 180);
             const decRad = declination * (Math.PI / 180);
             
-            // cos(Azimuth) = sin(Declination) / cos(Latitude)
             let cosAzimuth = Math.sin(decRad) / Math.cos(latRad);
-            // จำกัดขอบเขตให้อยู่ช่วง [-1, 1] ป้องกันเกิด Floating point error
             cosAzimuth = Math.max(-1, Math.min(1, cosAzimuth));
 
             const azimuthRad = Math.acos(cosAzimuth);
             const azimuthDeg = azimuthRad * (180 / Math.PI);
 
-            const sunriseAzimuth = azimuthDeg;            // ทิศอาทิตย์ขึ้น (เช่น 68.5°)
-            const sunsetAzimuth = 360 - azimuthDeg;       // ทิศอาทิตย์ตก (เช่น 291.5°)
+            const sunriseAzimuth = azimuthDeg; 
+            const sunsetAzimuth = 360 - azimuthDeg;
 
-            return { sunriseAzimuth, sunsetAzimuth };
+            let cosHourAngle = (Math.cos(90.833 * Math.PI / 180) - (Math.sin(latRad) * Math.sin(decRad))) / (Math.cos(latRad) * Math.cos(decRad));
+            cosHourAngle = Math.max(-1, Math.min(1, cosHourAngle));
+            
+            const hourAngleRad = Math.acos(cosHourAngle);
+            const hourAngleDeg = hourAngleRad * (180 / Math.PI);
+            
+            const solarNoonMinutes = 740 - (lng - 100.5) * 4; 
+            
+            const sunriseMinutes = solarNoonMinutes - (hourAngleDeg * 4);
+            const sunsetMinutes = solarNoonMinutes + (hourAngleDeg * 4);
+
+            const formatTime = (totalMinutes) => {
+                let hrs = Math.floor(totalMinutes / 60) % 24;
+                let mins = Math.floor(totalMinutes % 60);
+                if (hrs < 0) hrs += 24;
+                return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+            };
+
+            return {
+                sunriseAzimuth,
+                sunsetAzimuth,
+                sunriseTimeStr: formatTime(sunriseMinutes),
+                sunsetTimeStr: formatTime(sunsetMinutes)
+            };
         }
 
-        // หาจุดพิกัดปลายเส้นตามมุม Azimuth และระยะทาง
         function getDestinationPoint(lat, lng, azimuthDeg, distanceKm = 150) {
-            const R = 6371; // รัศมีโลก (กม.)
+            const R = 6371;
             const brng = azimuthDeg * (Math.PI / 180);
             const lat1 = lat * (Math.PI / 180);
             const lon1 = lng * (Math.PI / 180);
@@ -509,13 +654,28 @@
             return [lat2 * (180 / Math.PI), lon2 * (180 / Math.PI)];
         }
 
+        function updateCompassSunMarkers(sunriseAz, sunsetAz) {
+            const radius = 24;
+            
+            const srRad = (sunriseAz - 90) * (Math.PI / 180);
+            const srX = radius * Math.cos(srRad);
+            const srY = radius * Math.sin(srRad);
+            const srMarker = document.getElementById('compassMarkerSunrise');
+            srMarker.style.transform = `translate(${srX}px, ${srY}px)`;
+
+            const ssRad = (sunsetAz - 90) * (Math.PI / 180);
+            const ssX = radius * Math.cos(ssRad);
+            const ssY = radius * Math.sin(ssRad);
+            const ssMarker = document.getElementById('compassMarkerSunset');
+            ssMarker.style.transform = `translate(${ssX}px, ${ssY}px)`;
+        }
+
         function drawMapElements(lat, lng, date) {
             const t = i18n[currentLang];
             const subsolarLat = getSolarDeclination(date);
             const showTerminator = document.getElementById('showTerminator').checked;
             const showLocalAzimuth = document.getElementById('showLocalAzimuth').checked;
 
-            // ลบองค์ประกอบเดิมก่อนวาดใหม่
             if (userMarker) map.removeLayer(userMarker);
             if (subsolarLine) map.removeLayer(subsolarLine);
             if (yellowLabelMarker) map.removeLayer(yellowLabelMarker);
@@ -547,7 +707,7 @@
                 })
             }).addTo(map);
 
-            // 2. เส้น Terminator แบ่งกลางวัน-กลางคืน
+            // 2. เส้น Terminator แบ่งกลางวัน-กลางคืน (ล็อกฝั่งซ้าย = Sunset / ฝั่งขวา = Sunrise ถาวร)
             if (showTerminator) {
                 const angleRad = subsolarLat * (Math.PI / 180);
                 const centerLng = 100.5;
@@ -556,73 +716,68 @@
                 const termStartLat = subsolarLat - (deltaLng * Math.tan(angleRad));
                 const termEndLat = subsolarLat + (deltaLng * Math.tan(angleRad));
 
-                const startPoint = [termStartLat, centerLng - deltaLng];
-                const endPoint = [termEndLat, centerLng + deltaLng];
+                const westPoint = [termStartLat, centerLng - deltaLng]; // จุดปลายฝั่งซ้าย (ทิศตะวันตก)
+                const eastPoint = [termEndLat, centerLng + deltaLng];    // จุดปลายฝั่งขวา (ทิศตะวันออก)
 
-                terminatorLine = L.polyline([startPoint, endPoint], {
+                terminatorLine = L.polyline([westPoint, eastPoint], {
                     color: '#ff4d4d', weight: 3, opacity: 0.8, dashArray: '4, 8'
                 }).addTo(map);
 
-                let startText = subsolarLat < 0 ? t.sunrise : t.sunset;
-                let endText = subsolarLat < 0 ? t.sunset : t.sunrise;
-
-                startLabelMarker = L.marker(startPoint, {
-                    icon: L.divIcon({ className: 'sun-event-label', html: `🌅 ${startText}`, iconAnchor: [40, 10] })
+                // ฝั่งซ้าย (ทิศตะวันตก) เป็น Sunset เสมอ | ฝั่งขวา (ทิศตะวันออก) เป็น Sunrise เสมอ
+                startLabelMarker = L.marker(westPoint, {
+                    icon: L.divIcon({ className: 'sun-event-label', html: `🌇 ${t.sunset}`, iconAnchor: [40, 10] })
                 }).addTo(map);
 
-                endLabelMarker = L.marker(endPoint, {
-                    icon: L.divIcon({ className: 'sun-event-label', html: `🌇 ${endText}`, iconAnchor: [-10, 10] })
+                endLabelMarker = L.marker(eastPoint, {
+                    icon: L.divIcon({ className: 'sun-event-label', html: `🌅 ${t.sunrise}`, iconAnchor: [-10, 10] })
                 }).addTo(map);
             }
 
-            // 3. วาดเส้นและป้ายบอกทิศอาทิตย์ขึ้น-ตก ณ พิกัด (Local Sunrise/Sunset Azimuth)
-            const { sunriseAzimuth, sunsetAzimuth } = calculateSunriseSunsetAzimuth(lat, subsolarLat);
+            // 3. คำนวณทิศและเวลาอาทิตย์ขึ้น-ตก
+            const { sunriseAzimuth, sunsetAzimuth, sunriseTimeStr, sunsetTimeStr } = calculateSolarDetails(lat, lng, date, subsolarLat);
+
+            updateCompassSunMarkers(sunriseAzimuth, sunsetAzimuth);
 
             if (showLocalAzimuth) {
                 const sunriseTarget = getDestinationPoint(lat, lng, sunriseAzimuth, 160);
                 const sunsetTarget = getDestinationPoint(lat, lng, sunsetAzimuth, 160);
 
-                // เส้นทิศอาทิตย์ขึ้น (สีส้มทอง)
                 sunrisePolyline = L.polyline([[lat, lng], sunriseTarget], {
                     color: '#ff9800', weight: 4, opacity: 0.9, dashArray: '6, 6'
                 }).addTo(map);
 
-                // เส้นทิศอาทิตย์ตก (สีส้มแดง)
                 sunsetPolyline = L.polyline([[lat, lng], sunsetTarget], {
                     color: '#e91e63', weight: 4, opacity: 0.9, dashArray: '6, 6'
                 }).addTo(map);
 
-                // ป้ายกำกับปลายเส้นทิศอาทิตย์ขึ้น
                 sunriseAzimuthMarker = L.marker(sunriseTarget, {
                     icon: L.divIcon({
                         className: 'azimuth-label-sunrise',
-                        html: `🌅 Sunrise: ${sunriseAzimuth.toFixed(1)}° (${getCardinalDirection(sunriseAzimuth)})`,
+                        html: `🌅 Sunrise: ${sunriseTimeStr} (${sunriseAzimuth.toFixed(1)}° ${getCardinalDirection(sunriseAzimuth)})`,
                         iconAnchor: [30, 10]
                     })
                 }).addTo(map);
 
-                // ป้ายกำกับปลายเส้นทิศอาทิตย์ตก
                 sunsetAzimuthMarker = L.marker(sunsetTarget, {
                     icon: L.divIcon({
                         className: 'azimuth-label-sunset',
-                        html: `🌇 Sunset: ${sunsetAzimuth.toFixed(1)}° (${getCardinalDirection(sunsetAzimuth)})`,
+                        html: `🌇 Sunset: ${sunsetTimeStr} (${sunsetAzimuth.toFixed(1)}° ${getCardinalDirection(sunsetAzimuth)})`,
                         iconAnchor: [30, 10]
                     })
                 }).addTo(map);
             }
 
-            // Popup ข้อมูลพิกัด
             userMarker.bindPopup(
                 `${t.userMarker}[${lat.toFixed(4)}, ${lng.toFixed(4)}]<br>` +
-                `${t.localSunrise} <b>${sunriseAzimuth.toFixed(1)}°</b> (${getCardinalDirection(sunriseAzimuth)})<br>` +
-                `${t.localSunset} <b>${sunsetAzimuth.toFixed(1)}°</b> (${getCardinalDirection(sunsetAzimuth)})`
+                `${t.localSunrise} <b>${sunriseTimeStr} น.</b> (${sunriseAzimuth.toFixed(1)}° ${getCardinalDirection(sunriseAzimuth)})<br>` +
+                `${t.localSunset} <b>${sunsetTimeStr} น.</b> (${sunsetAzimuth.toFixed(1)}° ${getCardinalDirection(sunsetAzimuth)})`
             );
 
             let thStatus = (subsolarLat >= 5.6 && subsolarLat <= 20.4) ? t.passTH : t.noPassTH;
             document.getElementById('statusText').innerHTML = 
                 `${t.statusPrefix}<b>${formattedDate}</b> | ` +
                 `${t.subsolarText}<b>${Math.abs(subsolarLat).toFixed(2)}° ${latDir}</b> <i>(${thStatus})</i><br>` +
-                `<span style="color:#d9534f; font-size:13px;">* ${t.localSunrise}<b>${sunriseAzimuth.toFixed(1)}°</b> | ${t.localSunset}<b>${sunsetAzimuth.toFixed(1)}°</b></span>`;
+                `<span style="color:#d9534f; font-size:13px;">* ${t.localSunrise}<b>${sunriseTimeStr} น.</b> (${sunriseAzimuth.toFixed(1)}° ${getCardinalDirection(sunriseAzimuth)}) | ${t.localSunset}<b>${sunsetTimeStr} น.</b> (${sunsetAzimuth.toFixed(1)}° ${getCardinalDirection(sunsetAzimuth)})</span>`;
         }
 
         function formatDateToInputString(date) {
@@ -666,7 +821,6 @@
             }
         }
 
-        // เริ่มต้นใช้งาน
         updateUITexts();
         useCurrentLocationAndDate();
     </script>
