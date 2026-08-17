@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <!-- 
   ========================================================================
-  Project: แผนที่วิเคราะห์พิกัดพระอาทิตย์ตั้งฉาก, เข็มทิศ & ทิศอาทิตย์ขึ้น-ตก
+  Project: Solar Subsolar Point & Mobile Compass Analysis
   Author/Developer: Sumet Prapasathit
-  Version: 6.5 (Fixed North Label & Rotating Needle Only)
+  Version: 6.6 (Protected Code - Sweets Named Variables)
   ========================================================================
 -->
 <html lang="th">
@@ -16,9 +16,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
@@ -28,13 +26,11 @@
             flex-direction: column;
             align-items: center;
         }
-        .main-container {
+        .bingsu-box {
             width: 100%;
             max-width: 1200px;
         }
-
-        /* แผงควบคุม (Control Panel) */
-        .control-panel {
+        .thongYip-panel {
             background: #ffffff;
             padding: 14px;
             margin-bottom: 12px;
@@ -42,26 +38,26 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.06);
             width: 100%;
         }
-        .panel-header {
+        .foiThong-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 10px;
         }
-        .panel-header h2 {
+        .foiThong-header h2 {
             margin: 0;
             font-size: 18px;
             color: #1a1a1a;
         }
-        .form-group {
+        .thongAok-group {
             display: flex;
             gap: 8px;
             align-items: center;
             flex-wrap: wrap;
             margin-top: 12px;
         }
-        .date-stepper {
+        .medKhanun-stepper {
             display: flex;
             gap: 4px;
             align-items: center;
@@ -91,11 +87,11 @@
             opacity: 0.85;
             transform: scale(0.98);
         }
-        .btn-step { background-color: #6c757d; }
-        .btn-today { background-color: #28a745; }
-        .btn-compass { background-color: #17a2b8; transition: background 0.3s; }
-        .btn-compass.active { background-color: #dc3545; }
-        .btn-lang { 
+        .sanehJanh-btn { background-color: #6c757d; }
+        .lukChup-btn { background-color: #28a745; }
+        .buaLoi-btn { background-color: #17a2b8; transition: background 0.3s; }
+        .buaLoi-btn.active { background-color: #dc3545; }
+        .khanomChak-btn { 
             background-color: #6f42c1; 
             font-weight: bold;
             display: flex;
@@ -103,7 +99,7 @@
             gap: 5px;
         }
         
-        .checkbox-group {
+        .tako-group {
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -112,7 +108,7 @@
             padding: 10px 12px;
             border-radius: 8px;
         }
-        .checkbox-item {
+        .lodChong-item {
             display: flex;
             align-items: center;
             gap: 10px;
@@ -120,18 +116,18 @@
             color: #333;
             cursor: pointer;
         }
-        .checkbox-item input[type="checkbox"] {
+        .lodChong-item input[type="checkbox"] {
             width: 18px;
             height: 18px;
             accent-color: #007bff;
             cursor: pointer;
         }
 
-        #map-container {
+        #pudding-wrapper {
             position: relative;
             width: 100%;
         }
-        #map {
+        #pancakeMap {
             height: calc(100vh - 280px);
             min-height: 450px;
             max-height: 750px;
@@ -141,8 +137,7 @@
             z-index: 1;
         }
 
-        /* หน้าปัดเข็มทิศดิจิทัลมุมขวาบน */
-        .compass-box {
+        .tubTimKrob-box {
             position: absolute;
             top: 12px;
             right: 12px;
@@ -155,20 +150,18 @@
             min-width: 90px;
             backdrop-filter: blur(4px);
         }
-        .compass-box.disabled {
+        .tubTimKrob-box.disabled {
             opacity: 0.45;
             filter: grayscale(100%);
         }
 
-        .compass-outer-wrapper {
+        .salim-outer {
             position: relative;
             width: 66px;
             height: 66px;
             margin: 2px auto 2px auto;
         }
-
-        /* ตัว N ตรึงอยู่นิ่งด้านบนเข็มทิศ */
-        .cardinal-n {
+        .kalamae-n {
             position: absolute;
             top: -3px;
             left: 50%;
@@ -178,8 +171,7 @@
             color: #ff3b30;
             z-index: 10;
         }
-
-        .compass-disc {
+        .kluyBuatChi-disc {
             width: 44px;
             height: 44px;
             border-radius: 50%;
@@ -190,9 +182,7 @@
             background: radial-gradient(circle, #fff 60%, #e9ecef 100%);
             box-sizing: border-box;
         }
-
-        /* เลเยอร์เข็มทิศหมุนอย่างเดียว */
-        .compass-arrow-layer {
+        .waffle-arrow-layer {
             position: absolute;
             top: 0;
             left: 0;
@@ -201,7 +191,7 @@
             transition: transform 0.15s ease-out;
             z-index: 4;
         }
-        .compass-arrow {
+        .brownie-arrow {
             width: 0;
             height: 0;
             border-left: 5px solid transparent;
@@ -213,8 +203,7 @@
             transform: translateX(-50%);
         }
 
-        /* จุดมาร์กเกอร์ตรงขอบเข็มทิศ (ตรึงตำแหน่งตามทิศทางอ้างอิง) */
-        .compass-sun-marker {
+        .croissant-marker {
             width: 8px;
             height: 8px;
             border-radius: 50%;
@@ -227,21 +216,20 @@
             margin-top: -4px;
             margin-left: -4px;
         }
-        .compass-marker-sunrise { background-color: #ff9800; }
-        .compass-marker-sunset { background-color: #e91e63; }
+        .donut-sunrise { background-color: #ff9800; }
+        .eclair-sunset { background-color: #e91e63; }
 
-        .compass-degree {
+        .macaron-deg {
             font-size: 12px;
             font-weight: bold;
             color: #333;
         }
-        .compass-cardinal {
+        .cupcake-cardinal {
             font-size: 11px;
             color: #666;
         }
 
-        /* ป้ายกำกับบนแผนที่ (ตัวอักษรสีดำอ่านง่าย #000000) */
-        .yellow-line-label {
+        .crepe-yellow-label {
             background-color: #ffd700;
             color: #000000;
             font-weight: bold;
@@ -251,7 +239,7 @@
             border: 1px solid #d4af37;
             white-space: nowrap;
         }
-        .sun-event-label {
+        .mochi-event-label {
             background-color: #ff4d4d;
             color: #000000;
             font-weight: bold;
@@ -260,7 +248,7 @@
             border-radius: 4px;
             white-space: nowrap;
         }
-        .azimuth-label-sunrise {
+        .dango-sunrise-label {
             background-color: #ff9800;
             color: #000000;
             font-weight: bold;
@@ -270,7 +258,7 @@
             white-space: nowrap;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        .azimuth-label-sunset {
+        .taiyaki-sunset-label {
             background-color: #e91e63;
             color: #000000;
             font-weight: bold;
@@ -281,78 +269,75 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        /* Responsive Layout สำหรับจอมือถือโดยเฉพาะ */
         @media (max-width: 600px) {
             body { padding: 8px; }
-            .control-panel { padding: 12px; }
-            .panel-header h2 { font-size: 16px; }
-            .form-group { flex-direction: column; align-items: stretch; }
-            .date-stepper { width: 100%; }
-            .btn-today, .btn-compass { width: 100%; padding: 12px; }
-            #map { height: calc(100vh - 340px); min-height: 380px; }
+            .thongYip-panel { padding: 12px; }
+            .foiThong-header h2 { font-size: 16px; }
+            .thongAok-group { flex-direction: column; align-items: stretch; }
+            .medKhanun-stepper { width: 100%; }
+            .lukChup-btn, .buaLoi-btn { width: 100%; padding: 12px; }
+            #pancakeMap { height: calc(100vh - 340px); min-height: 380px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="main-container">
-        <div class="control-panel">
-            <div class="panel-header">
-                <h2 id="txtTitle">วิเคราะห์พิกัดดวงอาทิตย์ & เข็มทิศมือถือ</h2>
-                <button class="btn-lang" onclick="toggleLanguage()">
-                    🌐 <span id="txtLangBtn">English</span>
+    <div class="bingsu-box">
+        <div class="thongYip-panel">
+            <div class="foiThong-header">
+                <h2 id="txtRoti">วิเคราะห์พิกัดดวงอาทิตย์ & เข็มทิศมือถือ</h2>
+                <button class="khanomChak-btn" onclick="kanomTrakulThong()">
+                    🌐 <span id="txtKanomTrok">English</span>
                 </button>
             </div>
             
-            <div class="form-group">
-                <div class="date-stepper">
-                    <button class="btn-step" id="btnPrevDay" onclick="changeDate(-1)">◀ 1 วัน</button>
-                    <input type="date" id="dateInput" onchange="updateMapFromInput()">
-                    <button class="btn-step" id="btnNextDay" onclick="changeDate(1)">1 วัน ▶</button>
+            <div class="thongAok-group">
+                <div class="medKhanun-stepper">
+                    <button class="sanehJanh-btn" id="btnKhaoTomMat" onclick="khanomKrok(-1)">◀ 1 วัน</button>
+                    <input type="date" id="dateSangkaya" onchange="khanomMoKaeng()">
+                    <button class="sanehJanh-btn" id="btnKhanomThien" onclick="khanomKrok(1)">1 วัน ▶</button>
                 </div>
-                <button class="btn-today" id="btnToday" onclick="useCurrentLocationAndDate()">พิกัด/วันที่ปัจจุบัน</button>
-                <button class="btn-compass" id="btnCompass" onclick="toggleCompass()">🧭 เปิดเข็มทิศมือถือ</button>
+                <button class="lukChup-btn" id="btnKhanomChan" onclick="khanomThongAok()">พิกัด/วันที่ปัจจุบัน</button>
+                <button class="buaLoi-btn" id="btnKhanomPang" onclick="khanomTangMay()">🧭 เปิดเข็มทิศมือถือ</button>
             </div>
             
-            <div class="checkbox-group">
-                <label class="checkbox-item" for="showTerminator">
-                    <input type="checkbox" id="showTerminator" checked onchange="updateMapFromInput()">
-                    <span id="lblShowTerminator">แสดงเส้นแบ่งกลางวัน-กลางคืน (Terminator)</span>
+            <div class="tako-group">
+                <label class="lodChong-item" for="chkKhanomNamDokmai">
+                    <input type="checkbox" id="chkKhanomNamDokmai" checked onchange="khanomMoKaeng()">
+                    <span id="lblKhanomNamDokmai">แสดงเส้นแบ่งกลางวัน-กลางคืน (Terminator)</span>
                 </label>
-                <label class="checkbox-item" for="showLocalAzimuth">
-                    <input type="checkbox" id="showLocalAzimuth" onchange="updateMapFromInput()">
-                    <span id="lblShowLocalAzimuth">แสดงทิศอาทิตย์ขึ้น-ตก ณ พิกัด (Sunrise/Sunset Azimuth)</span>
+                <label class="lodChong-item" for="chkKhanomLua">
+                    <input type="checkbox" id="chkKhanomLua" onchange="khanomMoKaeng()">
+                    <span id="lblKhanomLua">แสดงทิศอาทิตย์ขึ้น-ตก ณ พิกัด (Sunrise/Sunset Azimuth)</span>
                 </label>
-                <label class="checkbox-item" for="enableCompassCheck">
-                    <input type="checkbox" id="enableCompassCheck" onchange="toggleCompassFromCheckbox(this.checked)">
-                    <span id="lblEnableCompass">เปิดใช้งานเข็มทิศ (Compass Sensor)</span>
+                <label class="lodChong-item" for="chkKhanomPhing">
+                    <input type="checkbox" id="chkKhanomPhing" onchange="khanomThongEak(this.checked)">
+                    <span id="lblKhanomPhing">เปิดใช้งานเข็มทิศ (Compass Sensor)</span>
                 </label>
             </div>
             
-            <div id="statusText" style="margin-top:10px; font-size:13px; color:#555; line-height:1.4;">กำลังคำนวณ...</div>
+            <div id="statusBingsu" style="margin-top:10px; font-size:13px; color:#555; line-height:1.4;">กำลังคำนวณ...</div>
         </div>
 
-        <div id="map-container">
-            <div class="compass-box disabled" id="compassBox">
-                <div class="compass-cardinal" id="compassHeadingText">ทิศ: OFF</div>
+        <div id="pudding-wrapper">
+            <div class="tubTimKrob-box disabled" id="boxTubTimKrob">
+                <div class="cupcake-cardinal" id="txtCupcakeHeading">ทิศ: OFF</div>
                 
-                <div class="compass-outer-wrapper">
-                    <span class="cardinal-n">N</span>
-                    <div class="compass-disc" id="compassDisc">
-                        <!-- เฉพาะตัวเข็มทิศที่หมุน -->
-                        <div class="compass-arrow-layer" id="compassArrowLayer">
-                            <div class="compass-arrow"></div>
+                <div class="salim-outer">
+                    <span class="kalamae-n">N</span>
+                    <div class="kluyBuatChi-disc" id="discKluyBuatChi">
+                        <div class="waffle-arrow-layer" id="layerWaffleArrow">
+                            <div class="brownie-arrow"></div>
                         </div>
-                        <!-- จุดมาร์กเกอร์แสดงทิศทางอาทิตย์ขึ้น-ตก ตรึงตำแหน่งตามองศาทิศจริง -->
-                        <div class="compass-sun-marker compass-marker-sunrise" id="compassMarkerSunrise" title="Sunrise Direction"></div>
-                        <div class="compass-sun-marker compass-marker-sunset" id="compassMarkerSunset" title="Sunset Direction"></div>
+                        <div class="croissant-marker donut-sunrise" id="mrkDonutSunrise" title="Sunrise Direction"></div>
+                        <div class="croissant-marker eclair-sunset" id="mrkEclairSunset" title="Sunset Direction"></div>
                     </div>
                 </div>
 
-                <div class="compass-degree" id="compassDegreeText">0°</div>
+                <div class="macaron-deg" id="txtMacaronDeg">0°</div>
             </div>
 
-            <div id="map"></div>
+            <div id="pancakeMap"></div>
         </div>
     </div>
 
@@ -362,12 +347,12 @@
     <script>
         /**
          * Developer: Sumet Prapasathit
-         * Interactive Solar Subsolar, Terminator & Sunrise/Sunset Azimuth Map Script
+         * Protected Solar Engine Module (Codename: KhanomSweet)
          */
 
-        let currentLang = 'th';
+        let sweetLang = 'th';
 
-        const i18n = {
+        const i18nSweet = {
             th: {
                 title: "วิเคราะห์พิกัดดวงอาทิตย์ & เข็มทิศมือถือ",
                 langBtn: "English EN",
@@ -424,383 +409,381 @@
             }
         };
 
-        let currentLat = 12.5116;
-        let currentLng = 99.9678;
+        let latTango = 12.5116;
+        let lngMango = 99.9678;
         
-        const map = L.map('map').setView([13.736717, 100.523186], 6);
+        const mapPancake = L.map('pancakeMap').setView([13.736717, 100.523186], 6);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors | Created by Sumet Prapasathit'
-        }).addTo(map);
+        }).addTo(mapPancake);
 
-        let userMarker = null;
-        let subsolarLine = null;
-        let yellowLabelMarker = null;
-        let terminatorLine = null;
-        let startLabelMarker = null;
-        let endLabelMarker = null;
+        let mrkUserPoint = null;
+        let lineSubsolarYellow = null;
+        let mrkYellowLabel = null;
+        let lineTerminatorRed = null;
+        let mrkTerminatorStart = null;
+        let mrkTerminatorEnd = null;
         
-        let sunrisePolyline = null;
-        let sunsetPolyline = null;
-        let sunriseAzimuthMarker = null;
-        let sunsetAzimuthMarker = null;
+        let lineSunrisePoly = null;
+        let lineSunsetPoly = null;
+        let mrkSunriseAzimuth = null;
+        let mrkSunsetAzimuth = null;
         
-        let isCompassActive = false;
-        let smoothedHeading = 0;
-        const filterFactor = 0.2;
+        let isSensorCompassActive = false;
+        let degreeSmoothedHeading = 0;
+        const numFilterAlpha = 0.2;
 
-        function toggleLanguage() {
-            currentLang = currentLang === 'th' ? 'en' : 'th';
-            updateUITexts();
-            updateMapFromInput();
+        function kanomTrakulThong() {
+            sweetLang = sweetLang === 'th' ? 'en' : 'th';
+            renderSweetTexts();
+            khanomMoKaeng();
         }
 
-        function updateUITexts() {
-            const t = i18n[currentLang];
-            document.getElementById('txtTitle').innerText = t.title;
-            document.getElementById('txtLangBtn').innerText = t.langBtn;
-            document.getElementById('btnPrevDay').innerText = t.prevDay;
-            document.getElementById('btnNextDay').innerText = t.nextDay;
-            document.getElementById('btnToday').innerText = t.today;
-            document.getElementById('lblShowTerminator').innerText = t.showTerminator;
-            document.getElementById('lblShowLocalAzimuth').innerText = t.showLocalAzimuth;
-            document.getElementById('lblEnableCompass').innerText = t.enableCompass;
+        function renderSweetTexts() {
+            const sweet = i18nSweet[sweetLang];
+            document.getElementById('txtRoti').innerText = sweet.title;
+            document.getElementById('txtKanomTrok').innerText = sweet.langBtn;
+            document.getElementById('btnKhaoTomMat').innerText = sweet.prevDay;
+            document.getElementById('btnKhanomThien').innerText = sweet.nextDay;
+            document.getElementById('btnKhanomChan').innerText = sweet.today;
+            document.getElementById('lblKhanomNamDokmai').innerText = sweet.showTerminator;
+            document.getElementById('lblKhanomLua').innerText = sweet.showLocalAzimuth;
+            document.getElementById('lblKhanomPhing').innerText = sweet.enableCompass;
 
-            const btnCompass = document.getElementById('btnCompass');
-            if (isCompassActive) {
-                btnCompass.innerText = t.compassBtnOff;
-                document.getElementById('compassHeadingText').innerText = `${t.headingPrefix}${getCardinalDirection(smoothedHeading)}`;
+            const btnCompass = document.getElementById('btnKhanomPang');
+            if (isSensorCompassActive) {
+                btnCompass.innerText = sweet.compassBtnOff;
+                document.getElementById('txtCupcakeHeading').innerText = `${sweet.headingPrefix}${getSweetDirection(degreeSmoothedHeading)}`;
             } else {
-                btnCompass.innerText = t.compassBtnOn;
-                document.getElementById('compassHeadingText').innerText = `${t.headingPrefix}${t.compassOffText}`;
+                btnCompass.innerText = sweet.compassBtnOn;
+                document.getElementById('txtCupcakeHeading').innerText = `${sweet.headingPrefix}${sweet.compassOffText}`;
             }
         }
 
         // ==========================================
-        // ระบบเข็มทิศดิจิทัล
+        // ระบบเซนเซอร์เข็มทิศ
         // ==========================================
-        function toggleCompass() {
-            if (isCompassActive) stopCompass(); else startCompass();
+        function khanomTangMay() {
+            if (isSensorCompassActive) stopSweetCompass(); else startSweetCompass();
         }
 
-        function toggleCompassFromCheckbox(checked) {
-            if (checked && !isCompassActive) startCompass();
-            else if (!checked && isCompassActive) stopCompass();
+        function khanomThongEak(checked) {
+            if (checked && !isSensorCompassActive) startSweetCompass();
+            else if (!checked && isSensorCompassActive) stopSweetCompass();
         }
 
-        function startCompass() {
-            const t = i18n[currentLang];
+        function startSweetCompass() {
+            const sweet = i18nSweet[sweetLang];
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission()
                     .then(response => {
-                        if (response === 'granted') bindCompassEvents();
-                        else { alert(t.compassDenied); setCompassState(false); }
+                        if (response === 'granted') bindSweetEvents();
+                        else { alert(sweet.compassDenied); setSweetCompassState(false); }
                     })
-                    .catch(() => setCompassState(false));
+                    .catch(() => setSweetSweetState(false));
             } else if (window.DeviceOrientationEvent) {
-                bindCompassEvents();
+                bindSweetEvents();
             } else {
-                alert(t.compassNotSupported); setCompassState(false);
+                alert(sweet.compassNotSupported); setSweetCompassState(false);
             }
         }
 
-        function bindCompassEvents() {
+        function bindSweetEvents() {
             if ('ondeviceorientationabsolute' in window) {
-                window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+                window.addEventListener('deviceorientationabsolute', handleSweetOrientation, true);
             } else if ('ondeviceorientation' in window) {
-                window.addEventListener('deviceorientation', handleOrientation, true);
+                window.addEventListener('deviceorientation', handleSweetOrientation, true);
             }
-            setCompassState(true);
+            setSweetCompassState(true);
         }
 
-        function stopCompass() {
-            window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
-            window.removeEventListener('deviceorientation', handleOrientation, true);
-            setCompassState(false);
+        function stopSweetCompass() {
+            window.removeEventListener('deviceorientationabsolute', handleSweetOrientation, true);
+            window.removeEventListener('deviceorientation', handleSweetOrientation, true);
+            setSweetCompassState(false);
         }
 
-        function setCompassState(active) {
-            isCompassActive = active;
-            const btnCompass = document.getElementById('btnCompass');
-            const compassBox = document.getElementById('compassBox');
-            const checkbox = document.getElementById('enableCompassCheck');
-            const t = i18n[currentLang];
+        function setSweetCompassState(active) {
+            isSensorCompassActive = active;
+            const btnCompass = document.getElementById('btnKhanomPang');
+            const boxCompass = document.getElementById('boxTubTimKrob');
+            const chkBox = document.getElementById('chkKhanomPhing');
+            const sweet = i18nSweet[sweetLang];
 
-            checkbox.checked = active;
+            chkBox.checked = active;
             if (active) {
                 btnCompass.classList.add('active');
-                btnCompass.innerText = t.compassBtnOff;
-                compassBox.classList.remove('disabled');
+                btnCompass.innerText = sweet.compassBtnOff;
+                boxCompass.classList.remove('disabled');
             } else {
                 btnCompass.classList.remove('active');
-                btnCompass.innerText = t.compassBtnOn;
-                compassBox.classList.add('disabled');
-                document.getElementById('compassDegreeText').innerText = `0°`;
-                document.getElementById('compassHeadingText').innerText = `${t.headingPrefix}${t.compassOffText}`;
-                document.getElementById('compassArrowLayer').style.transform = `rotate(0deg)`;
+                btnCompass.innerText = sweet.compassBtnOn;
+                boxCompass.classList.add('disabled');
+                document.getElementById('txtMacaronDeg').innerText = `0°`;
+                document.getElementById('txtCupcakeHeading').innerText = `${sweet.headingPrefix}${sweet.compassOffText}`;
+                document.getElementById('layerWaffleArrow').style.transform = `rotate(0deg)`;
             }
         }
 
-        function handleOrientation(event) {
-            if (!isCompassActive) return;
-            let heading = event.webkitCompassHeading || (event.alpha !== null ? 360 - event.alpha : null);
+        function handleSweetOrientation(event) {
+            if (!isSensorCompassActive) return;
+            let headingVal = event.webkitCompassHeading || (event.alpha !== null ? 360 - event.alpha : null);
 
-            if (heading !== null) {
-                let diff = heading - smoothedHeading;
-                if (diff > 180) diff -= 360;
-                if (diff < -180) diff += 360;
-                smoothedHeading += diff * filterFactor;
-                if (smoothedHeading < 0) smoothedHeading += 360;
-                if (smoothedHeading >= 360) smoothedHeading -= 360;
+            if (headingVal !== null) {
+                let diffVal = headingVal - degreeSmoothedHeading;
+                if (diffVal > 180) diffVal -= 360;
+                if (diffVal < -180) diffVal += 360;
+                degreeSmoothedHeading += diffVal * numFilterAlpha;
+                if (degreeSmoothedHeading < 0) degreeSmoothedHeading += 360;
+                if (degreeSmoothedHeading >= 360) degreeSmoothedHeading -= 360;
 
-                const deg = Math.round(smoothedHeading);
-                const t = i18n[currentLang];
-                // หมุนเฉพาะเข็มสีแดง
-                document.getElementById('compassArrowLayer').style.transform = `rotate(${deg}deg)`;
-                document.getElementById('compassDegreeText').innerText = `${deg}°`;
-                document.getElementById('compassHeadingText').innerText = `${t.headingPrefix}${getCardinalDirection(deg)}`;
+                const degRound = Math.round(degreeSmoothedHeading);
+                const sweet = i18nSweet[sweetLang];
+                document.getElementById('layerWaffleArrow').style.transform = `rotate(${degRound}deg)`;
+                document.getElementById('txtMacaronDeg').innerText = `${degRound}°`;
+                document.getElementById('txtCupcakeHeading').innerText = `${sweet.headingPrefix}${getSweetDirection(degRound)}`;
             }
         }
 
-        function getCardinalDirection(deg) {
-            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-            return directions[Math.round(deg / 45) % 8];
+        function getSweetDirection(deg) {
+            const arrDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            return arrDirections[Math.round(deg / 45) % 8];
         }
 
         // ==========================================
-        // สูตรดาราศาสตร์คำนวณทิศ & เวลาอาทิตย์ขึ้น-ตก
+        // สูตรคำนวณดาราศาสตร์
         // ==========================================
-        function getSolarDeclination(date) {
-            const startOfYear = new Date(date.getFullYear(), 0, 0);
-            const diff = date - startOfYear;
-            const oneDay = 1000 * 60 * 60 * 24;
-            const dayOfYear = Math.floor(diff / oneDay);
-            return -23.44 * Math.cos((2 * Math.PI / 365) * (dayOfYear + 10));
+        function computeSolarDeclination(dtTarget) {
+            const dtStartYear = new Date(dtTarget.getFullYear(), 0, 0);
+            const numDiffTime = dtTarget - dtStartYear;
+            const numOneDay = 1000 * 60 * 60 * 24;
+            const numDayOfYear = Math.floor(numDiffTime / numOneDay);
+            return -23.44 * Math.cos((2 * Math.PI / 365) * (numDayOfYear + 10));
         }
 
-        function calculateSolarDetails(lat, lng, date, declination) {
-            const latRad = lat * (Math.PI / 180);
-            const decRad = declination * (Math.PI / 180);
+        function computeSolarMathDetails(latVal, lngVal, dtTarget, decVal) {
+            const latRadVal = latVal * (Math.PI / 180);
+            const decRadVal = decVal * (Math.PI / 180);
             
-            let cosAzimuth = Math.sin(decRad) / Math.cos(latRad);
-            cosAzimuth = Math.max(-1, Math.min(1, cosAzimuth));
+            let cosAzimuthVal = Math.sin(decRadVal) / Math.cos(latRadVal);
+            cosAzimuthVal = Math.max(-1, Math.min(1, cosAzimuthVal));
 
-            const azimuthRad = Math.acos(cosAzimuth);
-            const azimuthDeg = azimuthRad * (180 / Math.PI);
+            const azimuthRadVal = Math.acos(cosAzimuthVal);
+            const azimuthDegVal = azimuthRadVal * (180 / Math.PI);
 
-            const sunriseAzimuth = azimuthDeg; 
-            const sunsetAzimuth = 360 - azimuthDeg;
+            const numSunriseAz = azimuthDegVal; 
+            const numSunsetAz = 360 - azimuthDegVal;
 
-            let cosHourAngle = (Math.cos(90.833 * Math.PI / 180) - (Math.sin(latRad) * Math.sin(decRad))) / (Math.cos(latRad) * Math.cos(decRad));
-            cosHourAngle = Math.max(-1, Math.min(1, cosHourAngle));
+            let cosHourAngleVal = (Math.cos(90.833 * Math.PI / 180) - (Math.sin(latRadVal) * Math.sin(decRadVal))) / (Math.cos(latRadVal) * Math.cos(decRadVal));
+            cosHourAngleVal = Math.max(-1, Math.min(1, cosHourAngleVal));
             
-            const hourAngleRad = Math.acos(cosHourAngle);
-            const hourAngleDeg = hourAngleRad * (180 / Math.PI);
+            const hourAngleRadVal = Math.acos(cosHourAngleVal);
+            const hourAngleDegVal = hourAngleRadVal * (180 / Math.PI);
             
-            const solarNoonMinutes = 740 - (lng - 100.5) * 4; 
+            const numSolarNoonMins = 740 - (lngVal - 100.5) * 4; 
             
-            const sunriseMinutes = solarNoonMinutes - (hourAngleDeg * 4);
-            const sunsetMinutes = solarNoonMinutes + (hourAngleDeg * 4);
+            const numSunriseMins = numSolarNoonMins - (hourAngleDegVal * 4);
+            const numSunsetMins = numSolarNoonMins + (hourAngleDegVal * 4);
 
-            const formatTime = (totalMinutes) => {
-                let hrs = Math.floor(totalMinutes / 60) % 24;
-                let mins = Math.floor(totalMinutes % 60);
-                if (hrs < 0) hrs += 24;
-                return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+            const fnFormatTimeString = (numTotalMins) => {
+                let numHrs = Math.floor(numTotalMins / 60) % 24;
+                let numMins = Math.floor(numTotalMins % 60);
+                if (numHrs < 0) numHrs += 24;
+                return `${String(numHrs).padStart(2, '0')}:${String(numMins).padStart(2, '0')}`;
             };
 
             return {
-                sunriseAzimuth,
-                sunsetAzimuth,
-                sunriseTimeStr: formatTime(sunriseMinutes),
-                sunsetTimeStr: formatTime(sunsetMinutes)
+                numSunriseAz,
+                numSunsetAz,
+                strSunriseTime: fnFormatTimeString(numSunriseMins),
+                strSunsetTime: fnFormatTimeString(numSunsetMins)
             };
         }
 
-        function getDestinationPoint(lat, lng, azimuthDeg, distanceKm = 150) {
-            const R = 6371;
-            const brng = azimuthDeg * (Math.PI / 180);
-            const lat1 = lat * (Math.PI / 180);
-            const lon1 = lng * (Math.PI / 180);
+        function calculateDestinationLatLng(latVal, lngVal, azDegVal, numDistanceKm = 150) {
+            const numEarthR = 6371;
+            const brngRad = azDegVal * (Math.PI / 180);
+            const lat1Rad = latVal * (Math.PI / 180);
+            const lon1Rad = lngVal * (Math.PI / 180);
 
-            const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distanceKm / R) +
-                         Math.cos(lat1) * Math.sin(distanceKm / R) * Math.cos(brng));
-            const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(distanceKm / R) * Math.cos(lat1),
-                         Math.cos(distanceKm / R) - Math.sin(lat1) * Math.sin(lat2));
+            const lat2Rad = Math.asin(Math.sin(lat1Rad) * Math.cos(numDistanceKm / numEarthR) +
+                            Math.cos(lat1Rad) * Math.sin(numDistanceKm / numEarthR) * Math.cos(brngRad));
+            const lon2Rad = lon1Rad + Math.atan2(Math.sin(brngRad) * Math.sin(numDistanceKm / numEarthR) * Math.cos(lat1Rad),
+                            Math.cos(numDistanceKm / numEarthR) - Math.sin(lat1Rad) * Math.sin(lat2Rad));
 
-            return [lat2 * (180 / Math.PI), lon2 * (180 / Math.PI)];
+            return [lat2Rad * (180 / Math.PI), lon2Rad * (180 / Math.PI)];
         }
 
-        // วางจุดมาร์กเกอร์ทิศอาทิตย์ขึ้น-ตก ให้อยู่ตรึงตำแหน่งองศาทิศอ้างอิงบนขอบวงกลม
-        function updateCompassSunMarkers(sunriseAz, sunsetAz) {
-            const radius = 20;
+        function updateSweetCompassMarkers(numSunriseAz, numSunsetAz) {
+            const numRadiusPx = 20;
             
-            const srRad = (sunriseAz - 90) * (Math.PI / 180);
-            const srX = radius * Math.cos(srRad);
-            const srY = radius * Math.sin(srRad);
-            const srMarker = document.getElementById('compassMarkerSunrise');
-            srMarker.style.transform = `translate(${srX}px, ${srY}px)`;
+            const srRadVal = (numSunriseAz - 90) * (Math.PI / 180);
+            const srXVal = numRadiusPx * Math.cos(srRadVal);
+            const srYVal = numRadiusPx * Math.sin(srRadVal);
+            const elSunriseMarker = document.getElementById('mrkDonutSunrise');
+            elSunriseMarker.style.transform = `translate(${srXVal}px, ${srYVal}px)`;
 
-            const ssRad = (sunsetAz - 90) * (Math.PI / 180);
-            const ssX = radius * Math.cos(ssRad);
-            const ssY = radius * Math.sin(ssRad);
-            const ssMarker = document.getElementById('compassMarkerSunset');
-            ssMarker.style.transform = `translate(${ssX}px, ${ssY}px)`;
+            const ssRadVal = (numSunsetAz - 90) * (Math.PI / 180);
+            const ssXVal = numRadiusPx * Math.cos(ssRadVal);
+            const ssYVal = numRadiusPx * Math.sin(ssRadVal);
+            const elSunsetMarker = document.getElementById('mrkEclairSunset');
+            elSunsetMarker.style.transform = `translate(${ssXVal}px, ${ssYVal}px)`;
         }
 
-        function drawMapElements(lat, lng, date) {
-            const t = i18n[currentLang];
-            const subsolarLat = getSolarDeclination(date);
-            const showTerminator = document.getElementById('showTerminator').checked;
-            const showLocalAzimuth = document.getElementById('showLocalAzimuth').checked;
+        function renderSweetMapElements(latVal, lngVal, dtTarget) {
+            const sweet = i18nSweet[sweetLang];
+            const numSubsolarLat = computeSolarDeclination(dtTarget);
+            const isShowTerminator = document.getElementById('chkKhanomNamDokmai').checked;
+            const isShowLocalAzimuth = document.getElementById('chkKhanomLua').checked;
 
-            if (userMarker) map.removeLayer(userMarker);
-            if (subsolarLine) map.removeLayer(subsolarLine);
-            if (yellowLabelMarker) map.removeLayer(yellowLabelMarker);
-            if (terminatorLine) map.removeLayer(terminatorLine);
-            if (startLabelMarker) map.removeLayer(startLabelMarker);
-            if (endLabelMarker) map.removeLayer(endLabelMarker);
-            if (sunrisePolyline) map.removeLayer(sunrisePolyline);
-            if (sunsetPolyline) map.removeLayer(sunsetPolyline);
-            if (sunriseAzimuthMarker) map.removeLayer(sunriseAzimuthMarker);
-            if (sunsetAzimuthMarker) map.removeLayer(sunsetAzimuthMarker);
+            if (mrkUserPoint) mapPancake.removeLayer(mrkUserPoint);
+            if (lineSubsolarYellow) mapPancake.removeLayer(lineSubsolarYellow);
+            if (mrkYellowLabel) mapPancake.removeLayer(mrkYellowLabel);
+            if (lineTerminatorRed) mapPancake.removeLayer(lineTerminatorRed);
+            if (mrkTerminatorStart) mapPancake.removeLayer(mrkTerminatorStart);
+            if (mrkTerminatorEnd) mapPancake.removeLayer(mrkTerminatorEnd);
+            if (lineSunrisePoly) mapPancake.removeLayer(lineSunrisePoly);
+            if (lineSunsetPoly) mapPancake.removeLayer(lineSunsetPoly);
+            if (mrkSunriseAzimuth) mapPancake.removeLayer(mrkSunriseAzimuth);
+            if (mrkSunsetAzimuth) mapPancake.removeLayer(mrkSunsetAzimuth);
 
-            userMarker = L.marker([lat, lng]).addTo(map);
+            mrkUserPoint = L.marker([latVal, lngVal]).addTo(mapPancake);
             
             // 1. เส้นแนวพระอาทิตย์ตั้งฉากสีเหลือง
-            const yellowLineCoordinates = [[subsolarLat, 90.0], [subsolarLat, 110.0]];
-            subsolarLine = L.polyline(yellowLineCoordinates, {
+            const arrYellowLineCoords = [[numSubsolarLat, 90.0], [numSubsolarLat, 110.0]];
+            lineSubsolarYellow = L.polyline(arrYellowLineCoords, {
                 color: '#FFD700', weight: 6, opacity: 0.95, dashArray: '12, 6'
-            }).addTo(map);
+            }).addTo(mapPancake);
 
-            const localeStr = currentLang === 'th' ? 'th-TH' : 'en-US';
-            const formattedDate = date.toLocaleDateString(localeStr, { day: 'numeric', month: 'short', year: 'numeric' });
-            const latDir = subsolarLat >= 0 ? 'N' : 'S';
+            const strLocale = sweetLang === 'th' ? 'th-TH' : 'en-US';
+            const strFormattedDate = dtTarget.toLocaleDateString(strLocale, { day: 'numeric', month: 'short', year: 'numeric' });
+            const strLatDirection = numSubsolarLat >= 0 ? 'N' : 'S';
 
-            yellowLabelMarker = L.marker([subsolarLat, 96.5], {
+            mrkYellowLabel = L.marker([numSubsolarLat, 96.5], {
                 icon: L.divIcon({
-                    className: 'yellow-line-label',
-                    html: `${t.subsolarLineLabel}${Math.abs(subsolarLat).toFixed(2)}° ${latDir}`,
+                    className: 'crepe-yellow-label',
+                    html: `${sweet.subsolarLineLabel}${Math.abs(numSubsolarLat).toFixed(2)}° ${strLatDirection}`,
                     iconAnchor: [80, 10]
                 })
-            }).addTo(map);
+            }).addTo(mapPancake);
 
             // 2. เส้น Terminator แบ่งกลางวัน-กลางคืน
-            if (showTerminator) {
-                const angleRad = subsolarLat * (Math.PI / 180);
-                const centerLng = 100.5;
-                const deltaLng = 10.0;
+            if (isShowTerminator) {
+                const numAngleRad = numSubsolarLat * (Math.PI / 180);
+                const numCenterLng = 100.5;
+                const numDeltaLng = 10.0;
                 
-                const termStartLat = subsolarLat - (deltaLng * Math.tan(angleRad));
-                const termEndLat = subsolarLat + (deltaLng * Math.tan(angleRad));
+                const numTermStartLat = numSubsolarLat - (numDeltaLng * Math.tan(numAngleRad));
+                const numTermEndLat = numSubsolarLat + (numDeltaLng * Math.tan(numAngleRad));
 
-                const westPoint = [termStartLat, centerLng - deltaLng];
-                const eastPoint = [termEndLat, centerLng + deltaLng];
+                const ptWestSide = [numTermStartLat, numCenterLng - numDeltaLng];
+                const ptEastSide = [numTermEndLat, numCenterLng + numDeltaLng];
 
-                terminatorLine = L.polyline([westPoint, eastPoint], {
+                lineTerminatorRed = L.polyline([ptWestSide, ptEastSide], {
                     color: '#ff4d4d', weight: 3, opacity: 0.8, dashArray: '4, 8'
-                }).addTo(map);
+                }).addTo(mapPancake);
 
-                startLabelMarker = L.marker(westPoint, {
-                    icon: L.divIcon({ className: 'sun-event-label', html: `🌇 ${t.sunset}`, iconAnchor: [40, 10] })
-                }).addTo(map);
+                mrkTerminatorStart = L.marker(ptWestSide, {
+                    icon: L.divIcon({ className: 'mochi-event-label', html: `🌇 ${sweet.sunset}`, iconAnchor: [40, 10] })
+                }).addTo(mapPancake);
 
-                endLabelMarker = L.marker(eastPoint, {
-                    icon: L.divIcon({ className: 'sun-event-label', html: `🌅 ${t.sunrise}`, iconAnchor: [-10, 10] })
-                }).addTo(map);
+                mrkTerminatorEnd = L.marker(ptEastSide, {
+                    icon: L.divIcon({ className: 'mochi-event-label', html: `🌅 ${sweet.sunrise}`, iconAnchor: [-10, 10] })
+                }).addTo(mapPancake);
             }
 
             // 3. คำนวณทิศและเวลาอาทิตย์ขึ้น-ตก
-            const { sunriseAzimuth, sunsetAzimuth, sunriseTimeStr, sunsetTimeStr } = calculateSolarDetails(lat, lng, date, subsolarLat);
+            const { numSunriseAz, numSunsetAz, strSunriseTime, strSunsetTime } = computeSolarMathDetails(latVal, lngVal, dtTarget, numSubsolarLat);
 
-            updateCompassSunMarkers(sunriseAzimuth, sunsetAzimuth);
+            updateSweetCompassMarkers(numSunriseAz, numSunsetAz);
 
-            if (showLocalAzimuth) {
-                const sunriseTarget = getDestinationPoint(lat, lng, sunriseAzimuth, 160);
-                const sunsetTarget = getDestinationPoint(lat, lng, sunsetAzimuth, 160);
+            if (isShowLocalAzimuth) {
+                const ptSunriseTarget = calculateDestinationLatLng(latVal, lngVal, numSunriseAz, 160);
+                const ptSunsetTarget = calculateDestinationLatLng(latVal, lngVal, numSunsetAz, 160);
 
-                sunrisePolyline = L.polyline([[lat, lng], sunriseTarget], {
+                lineSunrisePoly = L.polyline([[latVal, lngVal], ptSunriseTarget], {
                     color: '#ff9800', weight: 4, opacity: 0.9, dashArray: '6, 6'
-                }).addTo(map);
+                }).addTo(mapPancake);
 
-                sunsetPolyline = L.polyline([[lat, lng], sunsetTarget], {
+                lineSunsetPoly = L.polyline([[latVal, lngVal], ptSunsetTarget], {
                     color: '#e91e63', weight: 4, opacity: 0.9, dashArray: '6, 6'
-                }).addTo(map);
+                }).addTo(mapPancake);
 
-                sunriseAzimuthMarker = L.marker(sunriseTarget, {
+                mrkSunriseAzimuth = L.marker(ptSunriseTarget, {
                     icon: L.divIcon({
-                        className: 'azimuth-label-sunrise',
-                        html: `🌅 Sunrise: ${sunriseTimeStr} (${sunriseAzimuth.toFixed(1)}° ${getCardinalDirection(sunriseAzimuth)})`,
+                        className: 'dango-sunrise-label',
+                        html: `🌅 Sunrise: ${strSunriseTime} (${numSunriseAz.toFixed(1)}° ${getSweetDirection(numSunriseAz)})`,
                         iconAnchor: [30, 10]
                     })
-                }).addTo(map);
+                }).addTo(mapPancake);
 
-                sunsetAzimuthMarker = L.marker(sunsetTarget, {
+                mrkSunsetAzimuth = L.marker(ptSunsetTarget, {
                     icon: L.divIcon({
-                        className: 'azimuth-label-sunset',
-                        html: `🌇 Sunset: ${sunsetTimeStr} (${sunsetAzimuth.toFixed(1)}° ${getCardinalDirection(sunsetAzimuth)})`,
+                        className: 'taiyaki-sunset-label',
+                        html: `🌇 Sunset: ${strSunsetTime} (${numSunsetAz.toFixed(1)}° ${getSweetDirection(numSunsetAz)})`,
                         iconAnchor: [30, 10]
                     })
-                }).addTo(map);
+                }).addTo(mapPancake);
             }
 
-            userMarker.bindPopup(
-                `${t.userMarker}[${lat.toFixed(4)}, ${lng.toFixed(4)}]<br>` +
-                `${t.localSunrise} <b>${sunriseTimeStr} น.</b> (${sunriseAzimuth.toFixed(1)}° ${getCardinalDirection(sunriseAzimuth)})<br>` +
-                `${t.localSunset} <b>${sunsetTimeStr} น.</b> (${sunsetAzimuth.toFixed(1)}° ${getCardinalDirection(sunsetAzimuth)})`
+            mrkUserPoint.bindPopup(
+                `${sweet.userMarker}[${latVal.toFixed(4)}, ${lngVal.toFixed(4)}]<br>` +
+                `${sweet.localSunrise} <b>${strSunriseTime} น.</b> (${numSunriseAz.toFixed(1)}° ${getSweetDirection(numSunriseAz)})<br>` +
+                `${sweet.localSunset} <b>${strSunsetTime} น.</b> (${numSunsetAz.toFixed(1)}° ${getSweetDirection(numSunsetAz)})`
             );
 
-            let thStatus = (subsolarLat >= 5.6 && subsolarLat <= 20.4) ? t.passTH : t.noPassTH;
-            document.getElementById('statusText').innerHTML = 
-                `${t.statusPrefix}<b>${formattedDate}</b> | ` +
-                `${t.subsolarText}<b>${Math.abs(subsolarLat).toFixed(2)}° ${latDir}</b> <i>(${thStatus})</i><br>` +
-                `<span style="color:#d9534f; font-size:12.5px;">* ${t.localSunrise}<b>${sunriseTimeStr} น.</b> (${sunriseAzimuth.toFixed(1)}° ${getCardinalDirection(sunriseAzimuth)}) | ${t.localSunset}<b>${sunsetTimeStr} น.</b> (${sunsetAzimuth.toFixed(1)}° ${getCardinalDirection(sunsetAzimuth)})</span>`;
+            let strThStatus = (numSubsolarLat >= 5.6 && numSubsolarLat <= 20.4) ? sweet.passTH : sweet.noPassTH;
+            document.getElementById('statusBingsu').innerHTML = 
+                `${sweet.statusPrefix}<b>${strFormattedDate}</b> | ` +
+                `${sweet.subsolarText}<b>${Math.abs(numSubsolarLat).toFixed(2)}° ${strLatDirection}</b> <i>(${strThStatus})</i><br>` +
+                `<span style="color:#d9534f; font-size:12.5px;">* ${sweet.localSunrise}<b>${strSunriseTime} น.</b> (${numSunriseAz.toFixed(1)}° ${getSweetDirection(numSunriseAz)}) | ${sweet.localSunset}<b>${strSunsetTime} น.</b> (${numSunsetAz.toFixed(1)}° ${getSweetDirection(numSunsetAz)})</span>`;
         }
 
-        function formatDateToInputString(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+        function getSweetDateInputString(dtDate) {
+            const numYr = dtDate.getFullYear();
+            const strMonth = String(dtDate.getMonth() + 1).padStart(2, '0');
+            const strDay = String(dtDate.getDate()).padStart(2, '0');
+            return `${numYr}-${strMonth}-${strDay}`;
         }
 
-        function changeDate(daysOffset) {
-            const inputVal = document.getElementById('dateInput').value;
-            let currentDate = inputVal ? new Date(`${inputVal}T12:00:00`) : new Date();
-            currentDate.setDate(currentDate.getDate() + daysOffset);
-            document.getElementById('dateInput').value = formatDateToInputString(currentDate);
-            drawMapElements(currentLat, currentLng, currentDate);
+        function khanomKrok(numDaysOffset) {
+            const strInputVal = document.getElementById('dateSangkaya').value;
+            let dtCurrentDate = strInputVal ? new Date(`${strInputVal}T12:00:00`) : new Date();
+            dtCurrentDate.setDate(dtCurrentDate.getDate() + numDaysOffset);
+            document.getElementById('dateSangkaya').value = getSweetDateInputString(dtCurrentDate);
+            renderSweetMapElements(latTango, lngMango, dtCurrentDate);
         }
 
-        function updateMapFromInput() {
-            const inputVal = document.getElementById('dateInput').value;
-            if (!inputVal) return;
-            drawMapElements(currentLat, currentLng, new Date(`${inputVal}T12:00:00`));
+        function khanomMoKaeng() {
+            const strInputVal = document.getElementById('dateSangkaya').value;
+            if (!strInputVal) return;
+            renderSweetMapElements(latTango, lngMango, new Date(`${strInputVal}T12:00:00`));
         }
 
-        function useCurrentLocationAndDate() {
-            const today = new Date();
-            const dateStr = formatDateToInputString(today);
-            document.getElementById('dateInput').value = dateStr;
-            const noonToday = new Date(`${dateStr}T12:00:00`);
+        function khanomThongAok() {
+            const dtToday = new Date();
+            const strDateStr = getSweetDateInputString(dtToday);
+            document.getElementById('dateSangkaya').value = strDateStr;
+            const dtNoonToday = new Date(`${strDateStr}T12:00:00`);
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        currentLat = position.coords.latitude;
-                        currentLng = position.coords.longitude;
-                        drawMapElements(currentLat, currentLng, noonToday);
+                        latTango = position.coords.latitude;
+                        lngMango = position.coords.longitude;
+                        renderSweetMapElements(latTango, lngMango, dtNoonToday);
                     },
-                    () => drawMapElements(currentLat, currentLng, noonToday)
+                    () => renderSweetMapElements(latTango, lngMango, dtNoonToday)
                 );
             } else {
-                drawMapElements(currentLat, currentLng, noonToday);
+                renderSweetMapElements(latTango, lngMango, dtNoonToday);
             }
         }
 
-        updateUITexts();
-        useCurrentLocationAndDate();
+        renderSweetTexts();
+        khanomThongAok();
     </script>
 </body>
 </html>
